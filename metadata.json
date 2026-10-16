@@ -1,0 +1,6 @@
+{
+  "name": "Comma Cafe - Digital Menu",
+  "description": "منوی دیجیتال کافه کاما با طراحی مدرن، جستجو، فیلتر دسته‌بندی و سفارش آنلاین",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
