@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Header } from './components/Header';
 import { SearchFilterBar } from './components/SearchFilterBar';
+import { LiveDateTime } from './components/LiveDateTime';
 import { HeroBanner } from './components/HeroBanner';
 import { CategoryCarousel } from './components/CategoryCarousel';
 import { ProductCard } from './components/ProductCard';
@@ -13,25 +14,98 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { RouletteModal } from './components/RouletteModal';
 import { GalleryModal } from './components/GalleryModal';
-import { ClubModal } from './components/ClubModal';
 import { FilterModal, FilterState } from './components/FilterModal';
-import { WaiterModal } from './components/WaiterModal';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { RoulettePage } from './components/RoulettePage';
 import { GalleryPage } from './components/GalleryPage';
 import { LoginPage } from './components/LoginPage';
-import { MENU_ITEMS, MenuItem, CartItem } from './data/menuData';
+import { MENU_ITEMS, MenuItem, CartItem, CATEGORIES, Category } from './data/menuData';
 
 export default function App() {
   // Navigation & Page State
   const [currentPage, setCurrentPage] = useState<'home' | 'roulette' | 'gallery' | 'login'>('home');
 
+  // Manager Authentication State (Persists across page navigation)
+  const [isManagerLoggedIn, setIsManagerLoggedIn] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('comma_manager_auth') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleManagerLoginSuccess = () => {
+    setIsManagerLoggedIn(true);
+    try {
+      localStorage.setItem('comma_manager_auth', 'true');
+    } catch {
+      // ignore
+    }
+    showToast('خوش آمدید، میلاد خضری عزیز! دسترسی مدیریت فعال شد');
+  };
+
+  const handleManagerLogout = () => {
+    setIsManagerLoggedIn(false);
+    try {
+      localStorage.removeItem('comma_manager_auth');
+    } catch {
+      // ignore
+    }
+    showToast('از حساب مدیریت خارج شدید');
+  };
+
+  // Synchronized Menu Items & Categories (Single Source of Truth across Menu, Lucky Wheel & Management)
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('comma_cafe_items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return MENU_ITEMS;
+  });
+
+  const [categories, setCategories] = useState<Category[]>(() => {
+    try {
+      const saved = localStorage.getItem('comma_cafe_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return CATEGORIES;
+  });
+
+  // Persist items & categories to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('comma_cafe_items', JSON.stringify(menuItems));
+    } catch {}
+  }, [menuItems]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('comma_cafe_categories', JSON.stringify(categories));
+    } catch {}
+  }, [categories]);
+
+  // Compute live item counts for categories dynamically based on current menuItems
+  const categoriesWithDynamicCounts = useMemo(() => {
+    return categories.map((cat) => ({
+      ...cat,
+      count: menuItems.filter((item) => item.category === cat.id).length,
+    }));
+  }, [categories, menuItems]);
+
   // Modals State
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [isClubOpen, setIsClubOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isWaiterOpen, setIsWaiterOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
   const [completedOrder, setCompletedOrder] = useState<{
     orderId: string;
@@ -44,13 +118,13 @@ export default function App() {
   const [cartItems, setCartItems] = useState<CartItem[]>([
     {
       id: 'init-1',
-      item: MENU_ITEMS[0], // اسپرسو دوبل
+      item: menuItems[0] || MENU_ITEMS[0], // اسپرسو دوبل
       quantity: 1,
       options: { extraShot: false },
     },
     {
       id: 'init-2',
-      item: MENU_ITEMS[1], // چیزکیک لوتوس
+      item: menuItems[1] || MENU_ITEMS[1], // چیزکیک لوتوس
       quantity: 1,
     },
   ]);
@@ -75,6 +149,17 @@ export default function App() {
     maxPrice: 150000,
   });
 
+  // Ensure selectedCategoryId remains valid if categories are deleted/modified
+  useEffect(() => {
+    if (
+      selectedCategoryId !== 'all' &&
+      categories.length > 0 &&
+      !categories.some((c) => c.id === selectedCategoryId)
+    ) {
+      setSelectedCategoryId(categories[0]?.id || 'all');
+    }
+  }, [categories, selectedCategoryId]);
+
   // Calculate total cart badge
   const totalCartCount = useMemo(() => {
     return cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -89,9 +174,9 @@ export default function App() {
     return count;
   }, [filters]);
 
-  // Filtered menu items
+  // Filtered menu items from dynamic synchronized menuItems list
   const filteredItems = useMemo(() => {
-    return MENU_ITEMS.filter((item) => {
+    return menuItems.filter((item) => {
       // Category filter
       if (selectedCategoryId !== 'all' && item.category !== selectedCategoryId && !showAllPicks) {
         return false;
@@ -114,7 +199,7 @@ export default function App() {
 
       return true;
     });
-  }, [selectedCategoryId, searchTerm, filters, showAllPicks]);
+  }, [menuItems, selectedCategoryId, searchTerm, filters, showAllPicks]);
 
   // Cart operations
   const handleQuickAddToCart = (item: MenuItem) => {
@@ -140,7 +225,7 @@ export default function App() {
   const handleAddToCartWithOptions = (
     item: MenuItem,
     quantity: number,
-    options: {
+    options?: {
       milk?: string;
       sugar?: string;
       extraShot?: boolean;
@@ -190,6 +275,7 @@ export default function App() {
       {/* Main View Router */}
       {currentPage === 'roulette' ? (
         <RoulettePage
+          items={menuItems}
           cartCount={totalCartCount}
           onBack={() => setCurrentPage('home')}
           onOpenCart={() => setIsCartOpen(true)}
@@ -203,8 +289,22 @@ export default function App() {
         />
       ) : currentPage === 'login' ? (
         <LoginPage
+          isLoggedIn={isManagerLoggedIn}
+          totalItemsCount={menuItems.length}
+          totalCategoriesCount={categories.length}
           onBack={() => setCurrentPage('home')}
-          onLoginSuccess={() => showToast('خوش آمدید، میلاد خضری! ورود به پنل مدیریت موفق')}
+          onLoginSuccess={handleManagerLoginSuccess}
+          onLogout={handleManagerLogout}
+          categories={categories}
+          items={menuItems}
+          onSaveCategories={(newCats) => {
+            setCategories(newCats);
+            showToast('دسته‌بندی‌ها با موفقیت ذخیره و در تمام بخش‌ها اعمال شدند');
+          }}
+          onSaveItems={(newItems) => {
+            setMenuItems(newItems);
+            showToast('آیتم‌های منو و گردونه شانس با موفقیت به‌روزرسانی شدند');
+          }}
         />
       ) : (
         /* Main Mobile Screen Viewport Container */
@@ -216,19 +316,21 @@ export default function App() {
             onOpenRoulette={() => setCurrentPage('roulette')}
             onOpenGallery={() => setCurrentPage('gallery')}
             onOpenLogin={() => setCurrentPage('login')}
-            onOpenClub={() => setIsClubOpen(true)}
-            onOpenWaiter={() => setIsWaiterOpen(true)}
+            isManagerLoggedIn={isManagerLoggedIn}
           />
 
           {/* Scrollable Body Content */}
           <div className="flex flex-col gap-5 px-4 sm:px-5 mt-2">
-            {/* 2. Search Pill Bar */}
-            <SearchFilterBar
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              onOpenFilter={() => setIsFilterOpen(true)}
-              activeFilterCount={activeFilterCount}
-            />
+            {/* Search Section with Live Persian Date & Time */}
+            <div className="flex flex-col gap-1.5">
+              <LiveDateTime />
+              <SearchFilterBar
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                onOpenFilter={() => setIsFilterOpen(true)}
+                activeFilterCount={activeFilterCount}
+              />
+            </div>
 
             {/* 3. Hero Banner Card */}
             <HeroBanner
@@ -241,6 +343,7 @@ export default function App() {
 
             {/* 4. Menu Categories Carousel */}
             <CategoryCarousel
+              categories={categoriesWithDynamicCounts}
               selectedCategoryId={selectedCategoryId}
               onSelectCategory={(id) => {
                 setSelectedCategoryId(id);
@@ -322,63 +425,22 @@ export default function App() {
               )}
             </section>
 
-            {/* 6. Comma Club Rewards Banner */}
-            <section className="w-full bg-white rounded-[26px] p-4 shadow-clay-card border border-[#EEE7DE] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#FFDBCA] text-[#5D4335] flex items-center justify-center shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[26px] text-[#974724] fill-icon">
-                    workspace_premium
-                  </span>
-                </div>
-                <div className="flex flex-col text-right">
-                  <h4 className="text-[15px] font-bold text-[#5D4335]">
-                    باشگاه مشتریان کاما
-                  </h4>
-                  <p className="text-[11.5px] text-[#6F7A73] leading-tight">
-                    با هر سفارش امتیاز بگیرید و رایگان قهوه بنوشید
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsClubOpen(true)}
-                className="bg-[#0B6E4F] text-white text-[12.5px] font-bold px-4 py-2.5 rounded-full shadow-clay-button hover:bg-[#00543B] active:scale-95 transition-all shrink-0 cursor-pointer"
-                type="button"
-              >
-                عضویت
-              </button>
-            </section>
-
-            {/* Quick Table Service Action Card */}
-            <div className="flex items-center justify-between bg-[#F4EDE4] rounded-2xl px-4 py-2.5 border border-[#EEE7DE]">
-              <div className="flex items-center gap-2 text-[12px] text-[#5D4335] font-medium">
-                <span className="material-symbols-outlined text-[#0B6E4F] text-[18px]">
-                  support_agent
-                </span>
-                <span>نیاز به کمک یا تماس با ویتر دارید؟</span>
-              </div>
-              <button
-                onClick={() => setIsWaiterOpen(true)}
-                className="text-[11px] font-bold bg-white text-[#0B6E4F] px-3 py-1 rounded-full shadow-sm hover:bg-[#FAF3EA] transition-all cursor-pointer"
-                type="button"
-              >
-                فراخوانی ویتر
-              </button>
-            </div>
-
-            {/* 7. Cozy Minimal Cafe Details Footer */}
-            <footer className="pt-2 pb-4 text-center flex flex-col items-center gap-1.5 opacity-80">
-              <div className="flex items-center gap-2 text-[#6F7A73] text-[11px] font-medium">
-                <span>ساعت کاری: ۸:۰۰ الی ۲۳:۳۰</span>
-                <span>•</span>
-                <button
-                  onClick={() => setIsWaiterOpen(true)}
-                  className="hover:text-[#0B6E4F] underline decoration-dotted transition-colors cursor-pointer"
+            {/* 6. Minimal Brand Footer with Madenzo Credit */}
+            <footer className="pt-3 pb-2 text-center flex flex-col items-center justify-center">
+              <p className="text-[12.5px] text-[#6F7A73] font-medium flex items-center justify-center gap-1.5 flex-wrap">
+                <span>طراحی و توسعه توسط</span>
+                <a
+                  href="https://www.instagram.com/madenzo.x"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#974724] hover:text-[#772F0D] font-bold underline decoration-dotted underline-offset-4 hover:decoration-solid transition-colors inline-flex items-center gap-1"
+                  dir="ltr"
                 >
-                  وای‌فای رایگان کافه
-                </button>
-              </div>
-              <p className="text-[11px] text-[#6F7A73]">
-                طراحی شده برای تجربه‌ای آرام و لذت‌بخش در کافه کاما
+                  <svg className="w-3.5 h-3.5 inline-block text-[#974724]" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                  <span>Madenzo</span>
+                </a>
               </p>
             </footer>
           </div>
@@ -409,12 +471,6 @@ export default function App() {
         onClose={() => setIsGalleryOpen(false)}
       />
 
-      {/* Comma Club Modal */}
-      <ClubModal
-        isOpen={isClubOpen}
-        onClose={() => setIsClubOpen(false)}
-      />
-
       {/* Filter Modal */}
       <FilterModal
         isOpen={isFilterOpen}
@@ -429,12 +485,6 @@ export default function App() {
           });
           setIsFilterOpen(false);
         }}
-      />
-
-      {/* Waiter Assistance Modal */}
-      <WaiterModal
-        isOpen={isWaiterOpen}
-        onClose={() => setIsWaiterOpen(false)}
       />
 
       {/* Order Success Receipt Modal */}

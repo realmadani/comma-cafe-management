@@ -1,19 +1,45 @@
 import React, { useState } from 'react';
+import { Category, MenuItem } from '../data/menuData';
+import { EditCategoriesModal } from './EditCategoriesModal';
+import { EditItemsModal } from './EditItemsModal';
+import { EditGalleryModal } from './EditGalleryModal';
 
 interface LoginPageProps {
+  isLoggedIn: boolean;
+  totalItemsCount?: number;
+  totalCategoriesCount?: number;
   onBack: () => void;
-  onLoginSuccess?: () => void;
+  onLoginSuccess: () => void;
+  onLogout: () => void;
+  categories?: Category[];
+  items?: MenuItem[];
+  onSaveCategories?: (newCategories: Category[]) => void;
+  onSaveItems?: (newItems: MenuItem[]) => void;
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({
+  isLoggedIn,
+  totalItemsCount = 0,
+  totalCategoriesCount = 0,
+  onBack,
+  onLoginSuccess,
+  onLogout,
+  categories = [],
+  items = [],
+  onSaveCategories = () => {},
+  onSaveItems = () => {},
+}) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showHelpModal, setShowHelpModal] = useState(false);
+
+  // Admin Modals State
+  const [isEditCategoriesOpen, setIsEditCategoriesOpen] = useState(false);
+  const [isEditItemsOpen, setIsEditItemsOpen] = useState(false);
+  const [isEditGalleryOpen, setIsEditGalleryOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,20 +50,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
       setIsSubmitting(false);
       // Valid credentials according to user specification
       if (username.trim() === 'miladkhezri' && password === '1q2w3e4r5t6y') {
-        setIsLoggedIn(true);
-        if (onLoginSuccess) {
-          onLoginSuccess();
-        }
+        onLoginSuccess();
       } else {
         setErrorMessage('نام کاربری یا کلمه عبور وارد شده نادرست است.');
       }
-    }, 600);
-  };
-
-  const fillDemoCredentials = () => {
-    setUsername('miladkhezri');
-    setPassword('1q2w3e4r5t6y');
-    setErrorMessage('');
+    }, 500);
   };
 
   return (
@@ -69,15 +86,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
             </span>
           </div>
 
-          {/* Help / Support Icon Button */}
-          <button
-            onClick={() => setShowHelpModal(true)}
-            aria-label="راهنما و پشتیبانی"
-            className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#3F4943] shadow-clay-card hover:bg-[#FAF3EA] transition-all duration-200 active:scale-95 border border-[#EEE7DE]"
-            type="button"
-          >
-            <span className="material-symbols-outlined text-[19px]">help_outline</span>
-          </button>
+          {/* Header Spacer to balance title centering */}
+          <div className="w-10 h-10" />
         </div>
       </header>
 
@@ -111,7 +121,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
 
             {/* 3. Form Card: Soft Claymorphic Rounded Container */}
             <section className="bg-white rounded-3xl p-5 shadow-clay-card border border-[#EEE7DE]/80 backdrop-blur-sm">
-              <form onSubmit={handleSubmit} className="space-y-3.5">
+              <form onSubmit={handleSubmit} autoComplete="off" className="space-y-3.5">
                 {/* Error Banner */}
                 {errorMessage && (
                   <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-[11.5px] rounded-2xl text-right flex items-center gap-2">
@@ -137,11 +147,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
                       name="username"
                       type="text"
                       dir="ltr"
+                      autoComplete="off"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="مثال: admin یا barista_01"
                       required
-                      className="w-full bg-transparent border-0 rounded-2xl pr-11 pl-4 py-2.5 sm:py-3 text-[#1E1B16] placeholder:text-[#BEC9C1] text-[13px] text-right focus:ring-0 focus:outline-none"
+                      className="w-full bg-transparent border-0 rounded-2xl pr-11 pl-4 py-2.5 sm:py-3 text-[#1E1B16] text-[13px] text-right focus:ring-0 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -163,11 +173,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       dir="ltr"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
                       required
-                      className="w-full bg-transparent border-0 rounded-2xl pr-11 pl-11 py-2.5 sm:py-3 text-[#1E1B16] placeholder:text-[#BEC9C1] text-[13px] tracking-wider text-right focus:ring-0 focus:outline-none"
+                      className="w-full bg-transparent border-0 rounded-2xl pr-11 pl-11 py-2.5 sm:py-3 text-[#1E1B16] text-[13px] tracking-wider text-right focus:ring-0 focus:outline-none"
                     />
                     {/* Eye Toggle Button */}
                     <button
@@ -183,7 +193,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
                   </div>
                 </div>
 
-                {/* Form Helper Row: Remember Me & Forgot Password */}
+                {/* Form Helper Row: Remember Me */}
                 <div className="flex items-center justify-between pt-0.5 pb-0.5">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
@@ -194,15 +204,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
                     />
                     <span className="text-[11px] text-[#3F4943] font-medium">مرا به خاطر بسپار</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      alert('جهت بازیابی کلمه عبور با سرپرست فناوری یا مدیریت کافه کاما تماس حاصل فرمایید.')
-                    }
-                    className="text-[11px] font-semibold text-[#974724] hover:text-[#772F0D] transition-colors"
-                  >
-                    فراموشی رمز عبور؟
-                  </button>
                 </div>
 
                 {/* Primary Submit Button */}
@@ -223,18 +224,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
                   )}
                 </button>
               </form>
-
-              {/* Quick Fill Helper for User Convenience */}
-              <div className="mt-3 pt-3 border-t border-[#EEE7DE]/60 text-center">
-                <button
-                  type="button"
-                  onClick={fillDemoCredentials}
-                  className="text-[11px] text-[#0B6E4F] hover:underline inline-flex items-center gap-1 font-medium"
-                >
-                  <span className="material-symbols-outlined text-[14px]">key</span>
-                  <span>تکمیل خودکار اطلاعات ورود مدیر (miladkhezri)</span>
-                </button>
-              </div>
             </section>
 
             {/* 4. Security Note & Public Link Footer */}
@@ -280,31 +269,110 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
             </p>
 
             {/* Quick Status Stats Preview */}
-            <div className="grid grid-cols-2 gap-2.5 w-full mb-5 text-right">
+            <div className="grid grid-cols-2 gap-2.5 w-full mb-3 text-right">
               <div className="bg-[#FAF3EA] p-3 rounded-2xl border border-[#EEE7DE]">
-                <span className="text-[10px] text-[#6F7A73] block">سفارشات در صف بار:</span>
-                <span className="text-[18px] font-black text-[#00543B]">۴ سفارش</span>
+                <span className="text-[10px] text-[#6F7A73] block">محصولات منو و گردونه:</span>
+                <span className="text-[17px] font-black text-[#00543B]">
+                  {totalItemsCount.toLocaleString('fa-IR')} محصول
+                </span>
               </div>
               <div className="bg-[#FAF3EA] p-3 rounded-2xl border border-[#EEE7DE]">
-                <span className="text-[10px] text-[#6F7A73] block">میزهای پذیرش‌شده:</span>
-                <span className="text-[18px] font-black text-[#974724]">۸ از ۱۲</span>
+                <span className="text-[10px] text-[#6F7A73] block">دسته‌بندی‌های فعال:</span>
+                <span className="text-[17px] font-black text-[#974724]">
+                  {totalCategoriesCount.toLocaleString('fa-IR')} دسته
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 w-full">
+            {/* Sync Status Banner */}
+            <div className="w-full bg-[#0B6E4F]/10 border border-[#0B6E4F]/20 rounded-2xl p-2.5 mb-4 text-right flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#00543B] text-[18px] shrink-0">
+                sync
+              </span>
+              <span className="text-[11px] text-[#00543B] font-medium leading-relaxed">
+                محصولات گردونه شانس و منو کاملاً هماهنگ هستند و با ویرایش آیتم‌ها به صورت خودکار بروزرسانی می‌شوند.
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-2.5 w-full">
+              {/* 1. ویرایش گالری (Above Edit Items) */}
+              <button
+                onClick={() => setIsEditGalleryOpen(true)}
+                className="w-full bg-white hover:bg-[#FAF3EA] text-[#5D4335] py-2.5 px-4 rounded-2xl font-bold text-[13px] border border-[#EEE7DE] shadow-clay-card flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer group"
+                type="button"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#974724]/10 text-[#974724] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[19px]">photo_library</span>
+                  </div>
+                  <span>ویرایش گالری</span>
+                </div>
+                <span className="material-symbols-outlined text-[#6F7A73] text-[18px] group-hover:-translate-x-1 transition-transform">
+                  arrow_back
+                </span>
+              </button>
+
+              {/* 2. ویرایش آیتم‌ها (Above Edit Categories) */}
+              <button
+                onClick={() => setIsEditItemsOpen(true)}
+                className="w-full bg-white hover:bg-[#FAF3EA] text-[#5D4335] py-2.5 px-4 rounded-2xl font-bold text-[13px] border border-[#EEE7DE] shadow-clay-card flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer group"
+                type="button"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#0B6E4F]/10 text-[#0B6E4F] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[19px]">restaurant_menu</span>
+                  </div>
+                  <span>ویرایش آیتم‌ها</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-[#0B6E4F] font-bold bg-[#FAF3EA] px-2 py-0.5 rounded-full">
+                    {totalItemsCount.toLocaleString('fa-IR')} آیتم
+                  </span>
+                  <span className="material-symbols-outlined text-[#6F7A73] text-[18px] group-hover:-translate-x-1 transition-transform">
+                    arrow_back
+                  </span>
+                </div>
+              </button>
+
+              {/* 3. ویرایش دسته‌بندی‌ها (Directly above View Public Menu) */}
+              <button
+                onClick={() => setIsEditCategoriesOpen(true)}
+                className="w-full bg-white hover:bg-[#FAF3EA] text-[#5D4335] py-2.5 px-4 rounded-2xl font-bold text-[13px] border border-[#EEE7DE] shadow-clay-card flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer group"
+                type="button"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-[#5D4335]/10 text-[#5D4335] flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[19px]">category</span>
+                  </div>
+                  <span>ویرایش دسته‌بندی‌ها</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-[#5D4335] font-bold bg-[#FAF3EA] px-2 py-0.5 rounded-full">
+                    {totalCategoriesCount.toLocaleString('fa-IR')} دسته
+                  </span>
+                  <span className="material-symbols-outlined text-[#6F7A73] text-[18px] group-hover:-translate-x-1 transition-transform">
+                    arrow_back
+                  </span>
+                </div>
+              </button>
+
+              {/* 4. مشاهده منوی عمومی کافه */}
               <button
                 onClick={onBack}
-                className="w-full bg-[#0B6E4F] text-white py-3 rounded-full font-bold text-[13px] shadow-clay-button hover:bg-[#00543B] transition-all"
+                className="w-full bg-[#0B6E4F] text-white py-3 rounded-full font-bold text-[13px] shadow-clay-button hover:bg-[#00543B] transition-all mt-1 cursor-pointer"
                 type="button"
               >
                 مشاهده منوی عمومی کافه
               </button>
+
+              {/* 5. خروج از حساب مدیریت */}
               <button
                 onClick={() => {
-                  setIsLoggedIn(false);
+                  onLogout();
                   setPassword('');
+                  setUsername('');
                 }}
-                className="w-full bg-[#FAF3EA] text-[#5D4335] py-2.5 rounded-full font-bold text-[12px] hover:bg-[#EEE7DE] transition-all"
+                className="w-full bg-[#FAF3EA] text-[#5D4335] py-2.5 rounded-full font-bold text-[12px] hover:bg-[#EEE7DE] transition-all cursor-pointer"
                 type="button"
               >
                 خروج از حساب مدیریت
@@ -314,6 +382,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
         )}
       </main>
 
+      {/* Admin Modals */}
+      <EditCategoriesModal
+        isOpen={isEditCategoriesOpen}
+        onClose={() => setIsEditCategoriesOpen(false)}
+        categories={categories}
+        onSaveCategories={onSaveCategories}
+        items={items}
+      />
+
+      <EditItemsModal
+        isOpen={isEditItemsOpen}
+        onClose={() => setIsEditItemsOpen(false)}
+        items={items}
+        categories={categories}
+        onSaveItems={onSaveItems}
+      />
+
+      <EditGalleryModal
+        isOpen={isEditGalleryOpen}
+        onClose={() => setIsEditGalleryOpen(false)}
+      />
+
       {/* Institutional Branding Footer */}
       <footer className="w-full py-2 text-center relative z-10 border-t border-[#EEE7DE]/60 mt-auto">
         <div className="flex items-center justify-center gap-2 text-[#3F4943]/70 text-[10.5px]">
@@ -322,37 +412,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onBack, onLoginSuccess }) 
           <span>سامانه یکپارچه سفارش‌گیری و باریستا v2.4</span>
         </div>
       </footer>
-
-      {/* Help Modal */}
-      {showHelpModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
-          onClick={() => setShowHelpModal(false)}
-        >
-          <div
-            className="w-full max-w-[360px] bg-[#FFF8F1] rounded-3xl p-5 shadow-2xl border border-[#EEE7DE] text-right"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between pb-2 border-b border-[#EEE7DE] mb-3">
-              <h4 className="text-[15px] font-bold text-[#5D4335]">راهنمای ورود همکاران</h4>
-              <button
-                onClick={() => setShowHelpModal(false)}
-                className="w-7 h-7 rounded-full bg-white text-[#5D4335] flex items-center justify-center"
-                type="button"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-[12px] text-[#3F4943] leading-relaxed mb-3">
-              این بخش صرفاً برای پرسنل و مدیریت کافه کاما جهت دسترسی به تنظیمات قیمت‌گذاری و سفارشات تعریف شده است.
-            </p>
-            <div className="bg-white p-3 rounded-2xl border border-[#EEE7DE] text-[11px] text-[#5D4335] space-y-1">
-              <div><strong>نام کاربری مدیر:</strong> miladkhezri</div>
-              <div><strong>رمز عبور:</strong> 1q2w3e4r5t6y</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 interface Story {
   id: string;
@@ -155,6 +155,34 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({
   const [heroVideoLiked, setHeroVideoLiked] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
 
+  const mediaCards = useMemo<MediaCard[]>(() => {
+    try {
+      const saved = localStorage.getItem('comma_gallery_items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((item: any) => ({
+            id: item.id,
+            type: item.type || 'photo',
+            title: item.title,
+            subtitle: item.subtitle,
+            image: item.image,
+            tag:
+              item.category === 'interior'
+                ? '#فضای_کاما'
+                : item.category === 'coffee'
+                ? '#قهوه_کاما'
+                : '#شیرینی_کاما',
+            tagColor: 'text-[#974724]',
+            initialLikes: 120,
+            category: item.category || 'interior',
+          }));
+        }
+      }
+    } catch {}
+    return MEDIA_CARDS;
+  }, []);
+
   const toggleLike = (cardId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setLikedCardIds((prev) => ({
@@ -163,7 +191,7 @@ export const GalleryPage: React.FC<GalleryPageProps> = ({
     }));
   };
 
-  const filteredMedia = MEDIA_CARDS.filter((item) => {
+  const filteredMedia = mediaCards.filter((item) => {
     if (activeFilter === 'all') return true;
     return item.category === activeFilter;
   });

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MENU_ITEMS, MenuItem } from '../data/menuData';
 
 interface RouletteModalProps {
+  items?: MenuItem[];
   isOpen: boolean;
   onClose: () => void;
   onSelectProduct: (item: MenuItem) => void;
@@ -9,11 +10,13 @@ interface RouletteModalProps {
 }
 
 export const RouletteModal: React.FC<RouletteModalProps> = ({
+  items = MENU_ITEMS,
   isOpen,
   onClose,
   onSelectProduct,
   onAddToCart,
 }) => {
+  const wheelItems = items && items.length > 0 ? items : MENU_ITEMS;
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [spinCount, setSpinCount] = useState(0);
@@ -24,8 +27,8 @@ export const RouletteModal: React.FC<RouletteModalProps> = ({
     setIsSpinning(true);
     let counter = 0;
     const interval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * MENU_ITEMS.length);
-      setSelectedItem(MENU_ITEMS[randomIndex]);
+      const randomIndex = Math.floor(Math.random() * wheelItems.length);
+      setSelectedItem(wheelItems[randomIndex]);
       counter++;
       if (counter >= 16) {
         clearInterval(interval);
@@ -36,9 +39,9 @@ export const RouletteModal: React.FC<RouletteModalProps> = ({
   };
 
   // initial spin if null
-  if (!selectedItem && !isSpinning) {
-    const randomIndex = Math.floor(Math.random() * MENU_ITEMS.length);
-    setSelectedItem(MENU_ITEMS[randomIndex]);
+  if (!selectedItem && !isSpinning && wheelItems.length > 0) {
+    const randomIndex = Math.floor(Math.random() * wheelItems.length);
+    setSelectedItem(wheelItems[randomIndex]);
   }
 
   return (

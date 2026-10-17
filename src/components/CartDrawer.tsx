@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { CartItem } from '../data/menuData';
 
 interface CartDrawerProps {
@@ -7,8 +7,8 @@ interface CartDrawerProps {
   items: CartItem[];
   onUpdateQuantity: (cartItemId: string, newQuantity: number) => void;
   onRemoveItem: (cartItemId: string) => void;
-  onClearCart: () => void;
-  onOrderSuccess: (orderInfo: {
+  onClearCart?: () => void;
+  onOrderSuccess?: (orderInfo: {
     orderId: string;
     table: string;
     total: number;
@@ -22,19 +22,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   items,
   onUpdateQuantity,
   onRemoveItem,
-  onClearCart,
-  onOrderSuccess,
 }) => {
-  const [selectedTable, setSelectedTable] = useState('میز ۴');
-  const [discountCode, setDiscountCode] = useState('');
-  const [appliedDiscount, setAppliedDiscount] = useState<number | null>(null);
-  const [discountError, setDiscountError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   if (!isOpen) return null;
 
   // Calculate pricing
-  const subtotal = items.reduce((acc, current) => {
+  const totalPayable = items.reduce((acc, current) => {
     let unit = current.item.price;
     if (current.options?.extraShot) unit += 25000;
     if (current.options?.milk?.includes('بادام') || current.options?.milk?.includes('جو دوسر')) {
@@ -42,36 +34,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     }
     return acc + unit * current.quantity;
   }, 0);
-
-  const discountAmount = appliedDiscount ? Math.round((subtotal * appliedDiscount) / 100) : 0;
-  const finalTotal = Math.max(0, subtotal - discountAmount);
-
-  const handleApplyDiscount = () => {
-    if (discountCode.trim().toUpperCase() === 'COMMA') {
-      setAppliedDiscount(15);
-      setDiscountError('');
-    } else if (discountCode.trim()) {
-      setDiscountError('کد تخفیف معتبر نیست (کد تست: COMMA)');
-      setAppliedDiscount(null);
-    }
-  };
-
-  const handleSubmitOrder = () => {
-    if (items.length === 0) return;
-    setIsSubmitting(true);
-    setTimeout(() => {
-      const randomOrderId = `#CMA-${Math.floor(100 + Math.random() * 900)}`;
-      onOrderSuccess({
-        orderId: randomOrderId,
-        table: selectedTable,
-        total: finalTotal,
-        itemCount: items.reduce((sum, it) => sum + it.quantity, 0),
-      });
-      setIsSubmitting(false);
-      onClearCart();
-      onClose();
-    }, 900);
-  };
 
   return (
     <div
@@ -218,113 +180,35 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 })}
               </div>
 
-              {/* Table Selector */}
-              <div className="bg-white rounded-2xl p-3 border border-[#EEE7DE] flex flex-col gap-2 mt-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold text-[#5D4335]">
-                    محل سرو / شماره میز:
-                  </span>
-                  <span className="text-[11px] text-[#0B6E4F] font-bold">
-                    {selectedTable}
-                  </span>
-                </div>
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar py-1">
-                  {['میز ۱', 'میز ۲', 'میز ۳', 'میز ۴', 'میز ۵', 'میز ۶', 'فضای باز', 'بیرون‌بر'].map(
-                    (tbl) => (
-                      <button
-                        key={tbl}
-                        type="button"
-                        onClick={() => setSelectedTable(tbl)}
-                        className={`px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap shrink-0 border transition-all ${
-                          selectedTable === tbl
-                            ? 'bg-[#0B6E4F] text-white border-[#0B6E4F] font-bold shadow-sm'
-                            : 'bg-[#FAF3EA] text-[#5D4335] border-[#EEE7DE] hover:bg-white'
-                        }`}
-                      >
-                        {tbl}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* Promo code */}
-              <div className="bg-white rounded-2xl p-3 border border-[#EEE7DE] flex flex-col gap-1.5">
-                <span className="text-[12px] font-bold text-[#5D4335]">
-                  کد تخفیف کافه:
-                </span>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value)}
-                    placeholder="کد تخفیف (مثلا COMMA)"
-                    className="flex-1 bg-[#FAF3EA] rounded-xl px-3 py-1.5 text-[12px] uppercase tracking-wider text-[#1E1B16] border border-[#EEE7DE] focus:outline-none focus:ring-1 focus:ring-[#0B6E4F]"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleApplyDiscount}
-                    className="bg-[#5D4335] text-white text-[11px] font-bold px-3 py-1.5 rounded-xl hover:bg-[#3D2C23] transition-colors"
-                  >
-                    اعمال
-                  </button>
-                </div>
-                {appliedDiscount && (
-                  <span className="text-[11px] text-[#0B6E4F] font-medium">
-                    ✓ کد تخفیف {appliedDiscount}٪ با موفقیت اعمال شد!
-                  </span>
-                )}
-                {discountError && (
-                  <span className="text-[11px] text-red-600 font-medium">
-                    {discountError}
-                  </span>
-                )}
-              </div>
             </>
           )}
         </div>
 
-        {/* Footer Payment Summary */}
+        {/* Footer Payment Summary & Barista Notification */}
         {items.length > 0 && (
           <div className="p-4 bg-white border-t border-[#EEE7DE] flex flex-col gap-3 shadow-lg">
-            <div className="flex flex-col gap-1.5 text-[12px]">
+            <div className="flex flex-col gap-2 text-[12px]">
               <div className="flex items-center justify-between text-[#6F7A73]">
                 <span>جمع کل اقلام:</span>
-                <span>{subtotal.toLocaleString('fa-IR')} تومان</span>
-              </div>
-              {appliedDiscount && (
-                <div className="flex items-center justify-between text-[#0B6E4F] font-medium">
-                  <span>تخفیف ({appliedDiscount}٪):</span>
-                  <span>- {discountAmount.toLocaleString('fa-IR')} تومان</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between text-[#6F7A73]">
-                <span>حق سرویس و مالیات:</span>
-                <span className="text-[#0B6E4F] font-bold">رایگان (۰ تومان)</span>
+                <span>{totalPayable.toLocaleString('fa-IR')} تومان</span>
               </div>
               <div className="flex items-center justify-between text-[#1E1B16] text-[15px] font-black pt-2 border-t border-[#EEE7DE]">
                 <span>مبلغ قابل پرداخت:</span>
-                <span>{finalTotal.toLocaleString('fa-IR')} تومان</span>
+                <span className="text-[#0B6E4F] text-[16px] font-black">
+                  {totalPayable.toLocaleString('fa-IR')} تومان
+                </span>
               </div>
             </div>
 
-            <button
-              onClick={handleSubmitOrder}
-              disabled={isSubmitting}
-              className="w-full bg-[#0B6E4F] text-white py-3 px-4 rounded-full font-bold text-[14px] shadow-clay-button hover:bg-[#00543B] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-75"
-              type="button"
-            >
-              {isSubmitting ? (
-                <span>در حال ارسال سفارش به باریستا...</span>
-              ) : (
-                <>
-                  <span>ثبت نهایی سفارش ({selectedTable})</span>
-                  <span className="material-symbols-outlined text-[18px]">
-                    check_circle
-                  </span>
-                </>
-              )}
-            </button>
+            {/* Notification message instead of submit button */}
+            <div className="w-full bg-[#FAF3EA] border border-[#EEE7DE] rounded-2xl py-3 px-4 flex items-center justify-center gap-2 text-[#5D4335] text-center shadow-sm">
+              <span className="material-symbols-outlined text-[20px] text-[#0B6E4F] shrink-0">
+                local_cafe
+              </span>
+              <span className="font-bold text-[13px] sm:text-[13.5px]">
+                لطفا سفارشتون رو به باریستا اطلاع بدید
+              </span>
+            </div>
           </div>
         )}
       </div>

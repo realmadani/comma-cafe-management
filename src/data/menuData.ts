@@ -1,7 +1,7 @@
 export interface MenuItem {
   id: string;
   name: string;
-  category: 'hot-coffee' | 'cold-drinks' | 'cakes-desserts' | 'herbal-tea' | 'breakfast-snacks';
+  category: string;
   price: number;
   description: string;
   subDescription: string;
@@ -23,42 +23,37 @@ export interface MenuItem {
 }
 
 export interface Category {
-  id: 'all' | 'hot-coffee' | 'cold-drinks' | 'cakes-desserts' | 'herbal-tea' | 'breakfast-snacks';
+  id: string;
   name: string;
   count: number;
   image: string;
+  icon?: string;
 }
 
 export const CATEGORIES: Category[] = [
   {
     id: 'hot-coffee',
-    name: 'اسپرسو و گرم',
+    name: 'نوشیدنی گرم',
     count: 14,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCLKxeQR_VZH0IFfOJVMP0Wm8GKuL9icfmpr9o6jb3WKcoxy9bJ3JT0FeqN_pdVWqGhGBqSDdELStp1vhSj2GZT4mrFlRL9510CdzQ5RpYHFndt76sYczmksRH3qAZfRDdq_8uj5nOTMq3zPjntYS_hE5pasTlKB4eFjsWWTDS-lXsGhT9ZAKfZHGxPQpSIfPOdd42PPrrwUFj3sc3bbYawByRjHgw7AnzbdLSeOSGeeNK9Jb3jBjjo',
+    image: '',
   },
   {
     id: 'cold-drinks',
     name: 'نوشیدنی سرد',
     count: 11,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBBg3BmQdqNq6GNb_9zpB6_OKGuCYbwGpFoftNGDl57EAXo3KvZYVtYi4wPvKZn2QcHdD6dvfAtMhz0_bgJZPNGIs7YK3GuBY14ND4Mio6hYcLvVV1DmmwY-5oigHCCF_lapn3RzGLbvezE2OXZfTmjvGJDZoFiOuG5pkRO1H4QU1-bhGlsI2ZY6hPOp9zsul-Bb3AvFJWiwj9JWmAALqRwLjTpFRxmTLkt51Bv9rDZ4UXnS0fzzxxq',
+    image: '',
   },
   {
     id: 'cakes-desserts',
     name: 'کیک و دسر',
     count: 8,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCv7-uHvbcoidONDE2Yf9wB8BezOGEUGfLBLJFLjp9I5RtAexRYUJGAFfyzW9BTMUbiFo01vg15-WCoBXRHiSyE0FoWQSRu_ZgnQwZVkVLQwF_q74mTvnp8ngZLpB2B9QsRoKOfewIyqajgyRoP--8iBpAJBoj9k2qJ6ySoq6SgAEyrGtlXJcGw_oqlUJ_aBKvee6rkQ9i-ZFWGouEEbPvQmCD6pc2wBV4JLQVFo9oPAsy2y6dqi0MG',
+    image: '',
   },
   {
     id: 'herbal-tea',
     name: 'دمنوش و چای',
     count: 7,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBzZhYPsY88eeZsCmsnnL3RyQh_Qtc81EqdTO4IC3oTEi_u_4ri2tzzR93S1_Ftf_v26e0BYk5TJwwiuDPYmnZdLQY8QgdkD6AkbrVIWBhuNwaofAy3mBT91BOupRD4-Czn_kUd1hv3Z2p0rAf1z5z4_dja6G5arq44EzbRPQC4F-vIAxfy4wqk0JFmxEF40JuQ6SoZek_Z1KjTZydU3-GYHXYt5BWrgH36cYb6CKY9_fKKCYkZkKqr',
-  },
-  {
-    id: 'breakfast-snacks',
-    name: 'صبحانه و اسنک',
-    count: 9,
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDEVmodm9CtH2kAkmze9WPEOzO6zyT-ffy8MJuNUvTzhYjDcULnk8rSftaDJSYJZ6CWZZnHoppLKv3nT_6T_1yR1edSGDU1yqLBRTnHzY_7wRlHBDNwszey_1VH0vT86RNcxNyH4ZfvZ_WuPK8Ua7kzJOFopjTe8BY4AgZqPiNdpczSSIS0Ba8BcsxEJAxIc85Ox5vstg6HIUM8ASxToOuGzRKz01hXKYjy5P00bD4hwsv22YdZLo7c',
+    image: '',
   },
 ];
 

@@ -6,8 +6,7 @@ interface HeaderProps {
   onOpenRoulette: () => void;
   onOpenGallery: () => void;
   onOpenLogin: () => void;
-  onOpenClub?: () => void;
-  onOpenWaiter: () => void;
+  isManagerLoggedIn?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,8 +15,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenRoulette,
   onOpenGallery,
   onOpenLogin,
-  onOpenClub,
-  onOpenWaiter,
+  isManagerLoggedIn = false,
 }) => {
   return (
     <header className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between z-40 bg-[#FFF8F1]/95 backdrop-blur-md sticky top-0 border-b border-[#EEE7DE]/60">
@@ -77,12 +75,21 @@ export const Header: React.FC<HeaderProps> = ({
         {/* 4. Profile / Manager Login */}
         <button
           onClick={onOpenLogin}
-          className="w-10 h-10 rounded-full bg-white text-[#5D4335] shadow-clay-card flex items-center justify-center hover:bg-[#FAF3EA] active:scale-95 transition-all border border-[#EEE7DE]/80"
-          title="ورود به پنل مدیریت کافه"
+          className={`relative w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#FAF3EA] active:scale-95 transition-all border ${
+            isManagerLoggedIn
+              ? 'bg-[#0B6E4F]/10 text-[#00543B] border-[#0B6E4F] shadow-sm'
+              : 'bg-white text-[#5D4335] shadow-clay-card border-[#EEE7DE]/80'
+          }`}
+          title={isManagerLoggedIn ? 'پنل مدیریت (وارد شده)' : 'ورود به پنل مدیریت کافه'}
           type="button"
-          aria-label="ورود به پنل مدیریت کافه"
+          aria-label={isManagerLoggedIn ? 'پنل مدیریت (وارد شده)' : 'ورود به پنل مدیریت کافه'}
         >
-          <span className="material-symbols-outlined text-[20px]">person</span>
+          <span className="material-symbols-outlined text-[20px]">
+            {isManagerLoggedIn ? 'manage_accounts' : 'person'}
+          </span>
+          {isManagerLoggedIn && (
+            <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-[#00543B] border-2 border-white rounded-full animate-pulse" />
+          )}
         </button>
       </div>
     </header>
